@@ -1,9 +1,12 @@
 // https://carl-topham.com/theblog/post/creating-chrome-extension-uses-jquery-manipulate-dom-page/
 // http://stackoverflow.com/questions/14068879/modify-html-of-loaded-pages-using-chrome-extensions
 
+//https://vis4.net/labs/multihue/#colors=white, yellow, deeppink, darkred|steps=25|bez=1|coL=1
+['#ffffff', '#fff8c6', '#ffedac', '#ffe29b', '#ffd88f', '#ffcb86', '#ffbf7f', '#ffb379', '#fda873', '#fa9c6f', '#f6916a', '#f28666', '#ed7b62', '#e86f5e', '#e26459', '#dc5954', '#d64e4f', '#ce4349', '#c63842', '#bf2d3a', '#b52232', '#ac1729', '#a20c1f', '#970311', '#8b0000']
+
 var hsv2rgb = function(val, opacity) {
   // adapted from http://schinckel.net/2012/01/10/hsv-to-rgb-in-javascript/
-  var h = Math.floor((1 - val) * 120);
+  var h = Math.floor(val * 120);
   var s = val;
   var v = 1;
   var rgb, i, data = [];
@@ -32,7 +35,7 @@ function whiteToRed(val) {
 const ASSUMED_RATIO = 0.5;
 const ASSUMED_LOG = Math.log(1/ASSUMED_RATIO);
 
-var pointRegex = new RegExp(/(\d+) points/);
+var pointRegex = new RegExp(/(\d+)/);
 function parseScore(text) {
   return pointRegex.exec(text)[1]; //first match
 }
