@@ -58,28 +58,30 @@ function whatColorAmI(ratio) {
 // Application Code //
 //////////////////////
 
+var allParentChains = $('.sitetable.nestedlisting').first().find('> .comment');
 
-var firstCommentGroup = $('.comment').first();
+allParentChains.each(function() {
 
-firstCommentGroup.find('.score.unvoted').each(function(elem) {
-  t = $(this);
-  // p = $(this).closest('.comment')
-  p = $(this).parents('.comment').eq(1);
-  p2 = p.find('.score.unvoted').first();
+  $(this).find('.score.unvoted').each(function(elem) {
+    t = $(this);
+    // p = $(this).closest('.comment')
+    p = $(this).parents('.comment').eq(1);
+    p2 = p.find('.score.unvoted').first();
 
-  var thisScore = parseScore(t.text());
-  if (p2.text()) {
-    var parentScore = parseScore(p2.text());
-    var ratio = thisScore/parentScore;
+    var thisScore = parseScore(t.text());
+    if (p2.text()) {
+      var parentScore = parseScore(p2.text());
+      var ratio = thisScore/parentScore;
 
 
-    var color = whatColorAmI(ratio);
-    var newbie = t.after('<span>'+ ratio.toFixed(2) +'</span>');
-    newbie.css('background-color', color);
-  }
+      var color = whatColorAmI(ratio);
+      var newbie = t.after('<span>'+ ratio.toFixed(2) +'</span>');
+      newbie.css('background-color', color);
+    }
+
+  });
 
 });
-
 
 
 // var score = $('.comment').first().find('.score.unvoted').first().text()
