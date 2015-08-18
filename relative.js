@@ -3,56 +3,53 @@
 
 var hsv2rgb = function(val, opacity) {
   // adapted from http://schinckel.net/2012/01/10/hsv-to-rgb-in-javascript/
-  var h = Math.floor((100 - val) * 120 / 100);
-  var s = Math.abs(val - 50)/50;
+  var h = Math.floor((1 - val) * 120);
+  var s = val;
   var v = 1;
   var rgb, i, data = [];
   opacity = opacity || 1;
 
-  if (s === 0) {
+  // Ignore if below zero. (make white).
+  if (s <= 0) {
     rgb = [v,v,v];
   } else {
-    h = h / 60;
-    i = Math.floor(h);
-    data = [v*(1-s), v*(1-s*(h-i)), v*(1-s*(1-(h-i)))];
-    switch(i) {
-      case 0:
-        rgb = [v, data[2], data[0]];
-        break;
-      case 1:
-        rgb = [data[1], v, data[0]];
-        break;
-      case 2:
-        rgb = [data[0], v, data[2]];
-        break;
-      case 3:
-        rgb = [data[0], data[1], v];
-        break;
-      case 4:
-        rgb = [data[2], data[0], v];
-        break;
-      default:
-        rgb = [v, data[0], data[1]];
-        break;
-    }
+    h = h / 120;
+
+    data = [v*(1-s), v*(1-s*(h)), v*(1-s*(1-(h)))];
+    rgb = [v, data[1], data[0]];
+
   }
   return 'rgba('+rgb.map(function(d) {
     return Math.round(d*255)
   }).join(', ') + ', ' + opacity + ')';
-
-
-  // return '#' + rgb.map(function(x){
-  //   return ("0" + Math.round(x*255).toString(16)).slice(-2);
-  // }).join('');
 };
 
+function whiteToRed(val) {
+  var reddness = Math.floor(val * 255);
+  return 'rgba(' + reddness + ', 0, 0, 1)';
+}
+
+const ASSUMED_RATIO = 0.5;
+const ASSUMED_LOG = Math.log(1/ASSUMED_RATIO);
 
 var pointRegex = new RegExp(/(\d+) points/);
 function parseScore(text) {
   return pointRegex.exec(text)[1]; //first match
 }
 
+function logMe(val) {
+  return Math.log(val) / ASSUMED_LOG;
+}
 
+function whatColorAmI(ratio) {
+
+  console.log('ratio', ratio)
+  var numTimesOverExpected = logMe(ratio / ASSUMED_RATIO);
+  // map to 0 to 1 (expected to be in -2 to 2 range)
+  var _sc = numTimesOverExpected / 3;
+  console.log('sc', _sc)
+  return hsv2rgb(_sc, 0.5);
+}
 
 //////////////////////
 // Application Code //
@@ -73,7 +70,7 @@ firstCommentGroup.find('.score.unvoted').each(function(elem) {
     var ratio = thisScore/parentScore;
 
 
-    var color = hsv2rgb(20*ratio + 50, 0.5);
+    var color = whatColorAmI(ratio);
     var newbie = t.after('<span>'+ ratio.toFixed(2) +'</span>');
     newbie.css('background-color', color);
   }
