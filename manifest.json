@@ -13,6 +13,7 @@
   ],
   "content_scripts": [ {
     "js": [ "jquery-2.1.4.min.js", "relative.js" ],
+    "css": ["relative.css"],
     "matches": [ "http://*/*", "https://*/*"]
   }]
 }
