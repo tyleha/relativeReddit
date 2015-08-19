@@ -3,10 +3,12 @@
 
   "name": "Relative Reddit",
   "description": "This extension will show you how awesome Reddit posts are, relatively",
-  "version": "0.1",
+  "version": "1.0",
 
   "browser_action": {
-    "default_icon": "icon.png"
+    "default_icon": "Chevron Up-50.png",
+    "default_popup": "relative.html",
+    "default_title": "Relative Reddit"
   },
   "permissions": [
     "activeTab"
