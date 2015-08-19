@@ -38,7 +38,7 @@ function hoverText (ratio) {
 /** Convert a number [0 1] to a color in  an array */
 function fractionToColor (properFraction) {
   if (properFraction <= 0) {
-    return '#FFF' //white
+    return '#ffffff'; //white
   } else if (properFraction > 1) {
     return POSSIBLE_COLORS[POSSIBLE_COLORS.length-1]; //last element
   }
@@ -55,7 +55,7 @@ function logMe(val) {
 }
 
 function getRatioColor(ratio, rawScore) {
-  var decreasePowerBelow = 12
+  var decreasePowerBelow = 12;
   if (rawScore < decreasePowerBelow) {
     ratio = ratio * rawScore/decreasePowerBelow;
   }
@@ -64,6 +64,26 @@ function getRatioColor(ratio, rawScore) {
   var normScore = (ratio - ASSUMED_RATIO) / MAX_RATIO_POSSIBLE;
 
   return fractionToColor(normScore);
+}
+
+function hexToR(h) {return parseInt((cutHex(h)).substring(0,2),16);}
+function hexToG(h) {return parseInt((cutHex(h)).substring(2,4),16);}
+function hexToB(h) {return parseInt((cutHex(h)).substring(4,6),16);}
+function cutHex(h) {return (h.charAt(0)=="#") ? h.substring(1,7):h;}
+
+function whiteOrBlackText(backgroundColorInHex) {
+  var r = hexToR(backgroundColorInHex);
+  var g = hexToG(backgroundColorInHex);
+  var b = hexToB(backgroundColorInHex);
+
+  var o = Math.round(((r * 299) + (g * 587) + (b * 114)) /1000);
+  var color;
+  if (o > 125) {
+    color = 'black';
+  } else {
+    color = 'white';
+  }
+  return color;
 }
 
 //////////////////////
@@ -90,11 +110,13 @@ allParentChains.each(function() {
       // Compute our ratio
       var ratio = thisScore/parentScore;
       // Deterime what color, if any, to show
-      var color = getRatioColor(ratio, thisScore);
+      var backgroundColor = getRatioColor(ratio, thisScore);
       // Inject our badge.
-      $('<span>'+ ratio.toFixed(1) +'x</span>').insertAfter(t).css({
-        'background-color': color,
+      var lastScoreSpan = t.parent().find('.score.likes').first();
+      $('<span>'+ ratio.toFixed(1) +'x</span>').insertAfter(lastScoreSpan).css({
+        'background-color': backgroundColor,
         'cursor': 'default',
+        'color': whiteOrBlackText(backgroundColor),
       }).addClass('relative-tag').attr('title', hoverText(ratio));
     }
   });
