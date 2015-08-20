@@ -2,6 +2,7 @@
   "manifest_version": 2,
 
   "name": "Relative Reddit",
+  "short_name": "Relative",
   "description": "This extension will show you how awesome Reddit posts are, relatively",
   "version": "1.0",
 
