@@ -3,7 +3,7 @@
 
   "name": "Relative Reddit",
   "short_name": "Relative",
-  "description": "This extension will show you how awesome Reddit posts are, relatively",
+  "description": "Spot great comments by adding a color-coded badge that measures relative awesomeness.",
   "version": "1.0",
 
   "browser_action": {
