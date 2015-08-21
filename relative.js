@@ -6,7 +6,7 @@ var POSSIBLE_COLORS = ['#ffffff', '#fff8c6', '#ffedac', '#ffe29b', '#ffd88f', '#
 var ASSUMED_RATIO = 0.6;
 var MAX_RATIO_POSSIBLE = 4;
 
-var pointRegex = new RegExp(/(\d+)/);
+var pointRegex = new RegExp(/([-]{0,1}\d+)/);
 
 var hoverDescriptions = [
   {value: -Infinity, text: 'Either boring or new'},
@@ -47,7 +47,7 @@ function fractionToColor (properFraction) {
 }
 
 function parseScore(text) {
-  return pointRegex.exec(text)[1]; //first match
+  return parseInt(pointRegex.exec(text)[1]); //first match
 }
 
 function logMe(val) {
