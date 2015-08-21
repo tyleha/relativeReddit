@@ -57,7 +57,7 @@ function logMe(val) {
 function getRatioColor(ratio, rawScore) {
   var decreasePowerBelow = 12;
   if (rawScore < decreasePowerBelow) {
-    ratio = ratio * rawScore/decreasePowerBelow;
+    ratio = ratio * Math.abs(rawScore)/decreasePowerBelow;
   }
   // map to 0 to 1 (expected to be in -MAX_RATIO_POSSIBLE to MAX_RATIO_POSSIBLE range)
   // number of times over expected ratio norm'd

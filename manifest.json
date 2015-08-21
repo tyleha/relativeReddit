@@ -4,7 +4,7 @@
   "name": "Relative Reddit",
   "short_name": "Relative",
   "description": "Spot great comments by adding color-coded badges that measure relative awesomeness.",
-  "version": "1.0.2",
+  "version": "1.0.3",
 
   "browser_action": {
     "default_icon": "Chevron Up-48.png",
