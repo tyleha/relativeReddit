@@ -10,7 +10,7 @@ var pointRegex = new RegExp(/([-]{0,1}\d?[\d.k]+)/);
 
 var hoverDescriptions = [
   {value: -Infinity, text: 'Either boring or new'},
-  {value: 0.25, text: 'Not much to look at, like your mother\'s face'},
+  {value: 0.25, text: 'Not much to look at'},
   {value: 0.45, text: 'An ordinary comment'},
   {value: ASSUMED_RATIO, text: 'Above average, maybe even worth reading'},
   {value: 0.8, text: 'Better than its parent comment'},
