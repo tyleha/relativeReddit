@@ -6,16 +6,24 @@ var POSSIBLE_COLORS = ['#ffffff', '#fff8c6', '#ffedac', '#ffe29b', '#ffd88f', '#
 var ASSUMED_RATIO = 0.6;
 var MAX_RATIO_POSSIBLE = 4;
 
-var pointRegex = new RegExp(/([-]{0,1}\d+)/);
+var pointRegex = new RegExp(/([-]{0,1}\d?[\d.k]+)/);
 
 var hoverDescriptions = [
   {value: -Infinity, text: 'Either boring or new'},
-  {value: 0.3, text: 'An ordinary comment'},
-  {value: ASSUMED_RATIO, text: 'Above average and worth reading'},
-  {value: 1, text: 'Better than its parent comment'},
-  {value: 1.5, text: 'A real zinger'},
+  {value: 0.25, text: 'Not much to look at, like your mother\'s face'},
+  {value: 0.45, text: 'An ordinary comment'},
+  {value: ASSUMED_RATIO, text: 'Above average, maybe even worth reading'},
+  {value: 0.8, text: 'Better than its parent comment'},
+  {value: 1, text: 'Outwitted the previous comment'},
+  {value: 1.25, text: 'A solid zinger'},
+  {value: 1.5, text: 'A sharp wit or a useful answer'},
+  {value: 1.75, text: 'Somebody thought a while about this one'},
   {value: 2, text: 'Brilliant stuff'},
-  {value: 2.5, text: 'Transcendent. Call your Mom.'},
+  {value: 2.5, text: 'Damn, son'},
+  {value: 3.0, text: 'Wow. Quite a wordsmith.'},
+  {value: 4.0, text: 'Transcendent. Call your Mom.'},
+  {value: 6.0, text: 'This guy fucks'},
+  {value: 8.0, text: 'Great googly moogly - what did the last person say to piss people off?'},
   {value: Infinity, text: ''},
 ];
 
@@ -47,7 +55,12 @@ function fractionToColor (properFraction) {
 }
 
 function parseScore(text) {
-  return parseInt(pointRegex.exec(text)[1]); //first match
+  var match = pointRegex.exec(text)[1]; //first match
+  if (match.indexOf('k') > 0) {
+    return parseInt(match.split('k')[0])*1000;
+  } else {
+    return parseInt(match);
+  }
 }
 
 function logMe(val) {
