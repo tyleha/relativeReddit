@@ -1,7 +1,8 @@
 ///////////////
 // Constants //
 ///////////////
-//https://vis4.net/labs/multihue/#colors=white, yellow, deeppink, darkred|steps=25|bez=1|coL=1
+
+// https://vis4.net/labs/multihue/#colors=white, yellow, deeppink, darkred|steps=25|bez=1|coL=1
 var POSSIBLE_COLORS = ['#ffffff', '#fff8c6', '#ffedac', '#ffe29b', '#ffd88f', '#ffcb86', '#ffbf7f', '#ffb379', '#fda873', '#fa9c6f', '#f6916a', '#f28666', '#ed7b62', '#e86f5e', '#e26459', '#dc5954', '#d64e4f', '#ce4349', '#c63842', '#bf2d3a', '#b52232', '#ac1729', '#a20c1f', '#970311', '#8b0000'];
 var ASSUMED_RATIO = 0.6;
 var MAX_RATIO_POSSIBLE = 4;
@@ -63,10 +64,6 @@ function parseScore(text) {
   }
 }
 
-function logMe(val) {
-  return Math.log(val) / ASSUMED_LOG;
-}
-
 function getRatioColor(ratio, rawScore) {
   var decreasePowerBelow = 12;
   if (rawScore < decreasePowerBelow) {
@@ -102,6 +99,62 @@ function whiteOrBlackText(backgroundColorInHex) {
 //////////////////////
 // Application Code //
 //////////////////////
+
+// NEW REDDIT
+const commentLevel = '_1RIl585IYPW6cmNXwgRz0J';
+const commentScore = '_1rZYMD_4xY3gRcSS3p8ODO';
+
+function getScore(element) {
+  const scoreText = element.getElementsByClassName(commentScore)[0]?.innerText;
+  if (!scoreText) { return; }
+  if (scoreText.indexOf('k') > 0) {
+    return parseFloat(scoreText.split('k')[0])*1000;
+  } else {
+    return parseInt(scoreText);
+  }
+}
+
+// Use MutationObserver to detect new comments exposed wtih show more
+// https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver
+const parentCommentScores = [];
+
+document.querySelectorAll('div.Comment').forEach(element => {
+  console.log({element})
+  const score = getScore(element);
+  console.log({score})
+  if (isNaN(score)) {
+    // Score is not yet shown (may be a •)
+    return;
+  }
+  const levelText = element.getElementsByClassName(commentLevel)[0].innerText;
+  // Reddit indexed as level 1 is top comment, move index to 0
+  const level = parseInt(levelText.match(/level (\d+)/)[1]) - 1; 
+  parentCommentScores[level] = score;
+  console.log(parentCommentScores, JSON.stringify(parentCommentScores));
+
+  if (level === 0) {
+    // no ratio to show, top level comment
+    return;
+  }
+  //roughly handle really low/negative vote counts
+  const ratio = score / Math.max(parentCommentScores[level - 1], 1); 
+  console.log({ratio})
+
+  // Insert icon!
+  const backgroundColor = getRatioColor(ratio, score);
+  console.log({backgroundColor})
+  const scoreDiv = element.getElementsByClassName('voteButton _2m5vzALl8kQdr9kwIFUo5t')[1];
+  console.log({scoreDiv})
+  var newElement = document.createElement('span');
+  newElement.classList.add('relative-tag');
+  newElement.innerHTML = ratio.toFixed(1);
+  newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
+  scoreDiv.parentNode.insertBefore(newElement, scoreDiv.nextSibling);
+});
+
+
+
+// OLD REDDIT
 var allParentChains = $('.sitetable.nestedlisting').first().find('> .comment');
 
 // For each top-level comment
@@ -128,7 +181,6 @@ allParentChains.each(function() {
       var lastScoreSpan = t.parent().find('.score.likes').first();
       $('<span>'+ ratio.toFixed(1) +'x</span>').insertAfter(lastScoreSpan).css({
         'background-color': backgroundColor,
-        'cursor': 'default',
         'color': whiteOrBlackText(backgroundColor),
       }).addClass('relative-tag').attr('title', hoverText(ratio));
     }
