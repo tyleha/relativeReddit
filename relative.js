@@ -114,32 +114,17 @@ function getScore(element) {
   }
 }
 
-// Use MutationObserver to detect new comments exposed wtih show more
-// https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver
-const parentCommentScores = [];
-
-document.querySelectorAll('div.Comment').forEach(element => {
-  console.log({element})
-  const score = getScore(element);
-  console.log({score})
-  if (isNaN(score)) {
-    // Score is not yet shown (may be a •)
-    return;
-  }
+function getLevel(element) {
   const levelText = element.getElementsByClassName(commentLevel)[0].innerText;
   // Reddit indexed as level 1 is top comment, move index to 0
-  const level = parseInt(levelText.match(/level (\d+)/)[1]) - 1; 
-  parentCommentScores[level] = score;
-  console.log(parentCommentScores, JSON.stringify(parentCommentScores));
+  return parseInt(levelText.match(/level (\d+)/)[1]) - 1; 
+}
 
-  if (level === 0) {
-    // no ratio to show, top level comment
-    return;
-  }
-  //roughly handle really low/negative vote counts
-  const ratio = score / Math.max(parentCommentScores[level - 1], 1); 
-  console.log({ratio})
+function isCommentDiv(element) {
+  return element.getElementsByClassName(commentLevel).length !== 0;
+}
 
+function insertIcon(ratio, score, element) {
   // Insert icon!
   const backgroundColor = getRatioColor(ratio, score);
   console.log({backgroundColor})
@@ -150,13 +135,138 @@ document.querySelectorAll('div.Comment').forEach(element => {
   newElement.innerHTML = ratio.toFixed(1);
   newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
   scoreDiv.parentNode.insertBefore(newElement, scoreDiv.nextSibling);
+}
+
+
+
+chrome.runtime.onMessage.addListener(
+  function(request, sender, sendResponse) {
+    // listen for messages sent from background.js
+    console.log({request})
+    console.log('comment divs', document.querySelectorAll('div.Comment'))
+    console.log('comment section', document.querySelector('_2M2wOqmeoPVvcSsJ6Po9-V'));
+    if (request.message === 'hello!') {
+      console.log(request.url) // new url is now in content scripts!
+    }
 });
+
+
+
+const parentCommentScores = [];
+
+console.log('comment divs', document.querySelectorAll('div.Comment'))
+document.querySelectorAll('div.Comment').forEach(element => {
+  if (!isCommentDiv(element)) {
+    return;
+  }
+  console.log({element})
+  const score = getScore(element);
+  console.log({score})
+  const level = getLevel(element);
+  console.log({level})
+  // Even if score is NaN, we want to store it so that we are sure we're referring to the right comment
+  // when we do a comparison, and not an older comment score that wasn't overwritten.
+  parentCommentScores[level] = score;
+  console.log(parentCommentScores, JSON.stringify(parentCommentScores));
+  if (isNaN(score)) {
+    // Score is not yet shown (may be a •)
+    return;
+  }
+  if (level === 0) {
+    // no ratio to show, top level comment
+    return;
+  }
+
+  if (isNaN(parentCommentScores[level - 1])) {
+    return;
+  } 
+  //roughly handle really low/negative vote counts
+  const ratio = score / Math.max(parentCommentScores[level - 1], 1); 
+  console.log({ratio})
+  insertIcon(ratio, score, element);
+});
+
+
+
+
+// Use MutationObserver to detect new comments exposed wtih show more
+// Additionally, it seems that new Reddit sometimes reloads all comments so this code block will
+// do the majority of the work of labeling comments
+
+
+const observer = new MutationObserver((mutationList, observer) => {
+  console.log({mutationList, observer});
+  for (const mutation of mutationList) {
+    for (const element of mutation.addedNodes) {
+      if (element.nodeType === Node.ELEMENT_NODE && element.nodeName === 'DIV') {
+        // Test that this new element node is a comment and not something else
+        if (!isCommentDiv(element)) {
+          continue;
+        }
+        const level = getLevel(element);
+        // Nothing to show for top level comments
+        if (level === 0) {
+          continue;
+        }
+        const score = getScore(element);
+        if (isNaN(score)) {
+          continue;
+        }
+        console.log({level, element, score})
+
+        // Iterate up the comment div to find the nearest comment with a level one less than we 
+        // currently are. That is the comment to compare against.
+        let parentCommentElement;
+        let currentElement = element;
+        let iterations = 1;
+        // Don't look backwards more than 30 divs...if you gotta go back farther than that, you aren't
+        // going to be a highly rated comment with a ratio above 1/10 anyways. Also defends against 
+        // an infinite loop and locking up your browser tab.
+        const maxIterations = 30; 
+
+        while (parentCommentElement === undefined && iterations < maxIterations) {
+          // console.log({parentCommentElement, currentElement, iterations});
+          if (isCommentDiv(currentElement.previousSibling) && getLevel(currentElement.previousSibling) === level - 1) {
+            parentCommentElement = currentElement.previousSibling;
+          }
+          // Didn't find parent element, advance
+          currentElement = currentElement.previousSibling;
+          iterations++;
+        }
+
+        if (parentCommentElement) {
+          const parentSore = getScore(parentCommentElement);
+          console.log({score, parentSore})
+          if (isNaN(parentSore)) {
+            // Score is not yet shown (may be a •)
+            continue;
+          }
+          //roughly handle really low/negative vote counts
+          const ratio = score / Math.max(parentSore, 1); 
+          console.log({ratio})
+          insertIcon(ratio, score, element);
+        }
+      }
+    }
+  }
+});
+
+const commentSectionClass = '_2M2wOqmeoPVvcSsJ6Po9-V';
+const targetNode = document.querySelector(`.${commentSectionClass}`);
+const observerOptions = {
+  childList: true,
+  subtree: true
+}
+console.log({targetNode})
+observer.observe(targetNode, observerOptions);
+
+
 
 
 
 // OLD REDDIT
 var allParentChains = $('.sitetable.nestedlisting').first().find('> .comment');
-
+console.log({allParentChains})
 // For each top-level comment
 allParentChains.each(function() {
 
