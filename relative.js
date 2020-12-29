@@ -122,13 +122,13 @@ function isCommentDiv(element) {
   return element.getElementsByClassName(commentLevel).length !== 0;
 }
 
-function insertIcon(ratio, score, element) {
+function insertIcon(ratio, score, element, overrideText) {
   // Insert icon!
   const backgroundColor = getRatioColor(ratio, score);
   const scoreDiv = element.getElementsByClassName('voteButton _2m5vzALl8kQdr9kwIFUo5t')[1];
   const newElement = document.createElement('span');
   newElement.classList.add('relative-tag');
-  newElement.innerHTML = ratio.toFixed(1);
+  newElement.innerHTML = overrideText ? overrideText : ratio.toFixed(1);
   newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
   scoreDiv.parentNode.insertBefore(newElement, scoreDiv.nextSibling);
 }
@@ -218,6 +218,10 @@ const observeCommentSectionForNewComments = new MutationObserver((mutationList, 
           // Didn't find parent element, advance
           currentElement = currentElement.previousSibling;
           iterations++;
+        }
+        // Show *something* if we wouldn't traverse all the way back just to find out it's 17/5000 ~= 0.
+        if (iterations === maxIterations) {
+          insertIcon(0, 0, element, '~0.0');
         }
 
         if (parentCommentElement) {
