@@ -20,11 +20,9 @@ var hoverDescriptions = [
   {value: 1.5, text: 'A sharp wit or a useful answer'},
   {value: 1.75, text: 'Somebody thought a while about this one'},
   {value: 2, text: 'Brilliant stuff'},
-  {value: 2.5, text: 'Damn, son'},
+  {value: 2.5, text: 'Impressive. Most impressive.'},
   {value: 3.0, text: 'Wow. Quite a wordsmith.'},
   {value: 4.0, text: 'Transcendent. Call your Mom.'},
-  {value: 6.0, text: 'This guy fucks'},
-  {value: 8.0, text: 'Great googly moogly - what did the last person say to piss people off?'},
   {value: Infinity, text: ''},
 ];
 
@@ -117,7 +115,7 @@ function getScore(element) {
 function getLevel(element) {
   const levelText = element.getElementsByClassName(commentLevel)[0].innerText;
   // Reddit indexed as level 1 is top comment, move index to 0
-  return parseInt(levelText.match(/level (\d+)/)[1]) - 1; 
+  return parseInt(levelText.match(/level (\d+)/)[1]) - 1;
 }
 
 function isCommentDiv(element) {
@@ -127,76 +125,66 @@ function isCommentDiv(element) {
 function insertIcon(ratio, score, element) {
   // Insert icon!
   const backgroundColor = getRatioColor(ratio, score);
-  console.log({backgroundColor})
   const scoreDiv = element.getElementsByClassName('voteButton _2m5vzALl8kQdr9kwIFUo5t')[1];
-  console.log({scoreDiv})
-  var newElement = document.createElement('span');
+  const newElement = document.createElement('span');
   newElement.classList.add('relative-tag');
   newElement.innerHTML = ratio.toFixed(1);
   newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
   scoreDiv.parentNode.insertBefore(newElement, scoreDiv.nextSibling);
 }
 
-
-
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    // listen for messages sent from background.js
-    console.log({request})
-    console.log('comment divs', document.querySelectorAll('div.Comment'))
-    console.log('comment section', document.querySelector('_2M2wOqmeoPVvcSsJ6Po9-V'));
-    if (request.message === 'hello!') {
-      console.log(request.url) // new url is now in content scripts!
+function checkInitialLoadComments() {
+  // Check initial load comments
+  const parentCommentScores = [];
+  bodyNode.querySelectorAll('div.Comment').forEach(element => {
+    if (!isCommentDiv(element)) {
+      return;
     }
-});
+    const score = getScore(element);
+    const level = getLevel(element);
+    // Even if score is NaN, we want to store it so that we are sure we're referring to the right comment
+    // when we do a comparison, and not an older comment score that wasn't overwritten.
+    parentCommentScores[level] = score;
+    if (isNaN(score)) {
+      // Score is not yet shown (may be a •)
+      return;
+    }
+    if (level === 0) {
+      // no ratio to show, top level comment
+      return;
+    }
+
+    if (isNaN(parentCommentScores[level - 1])) {
+      return;
+    }
+    //roughly handle really low/negative vote counts
+    const ratio = score / Math.max(parentCommentScores[level - 1], 1);
+    const relativeTagElement = insertIcon(ratio, score, element);
+  });
+}
 
 
 
-const parentCommentScores = [];
+///////////////////////////////////
+// Dynamic new comment detection //
+///////////////////////////////////
 
-console.log('comment divs', document.querySelectorAll('div.Comment'))
-document.querySelectorAll('div.Comment').forEach(element => {
-  if (!isCommentDiv(element)) {
-    return;
-  }
-  console.log({element})
-  const score = getScore(element);
-  console.log({score})
-  const level = getLevel(element);
-  console.log({level})
-  // Even if score is NaN, we want to store it so that we are sure we're referring to the right comment
-  // when we do a comparison, and not an older comment score that wasn't overwritten.
-  parentCommentScores[level] = score;
-  console.log(parentCommentScores, JSON.stringify(parentCommentScores));
-  if (isNaN(score)) {
-    // Score is not yet shown (may be a •)
-    return;
-  }
-  if (level === 0) {
-    // no ratio to show, top level comment
-    return;
-  }
+const observeCommentSectionForNewCommentsOptions = {
+  subtree: true,
+  childList: true,
+}
+const observeCommentSectionForNewComments = new MutationObserver((mutationList, observer) => {
 
-  if (isNaN(parentCommentScores[level - 1])) {
-    return;
-  } 
-  //roughly handle really low/negative vote counts
-  const ratio = score / Math.max(parentCommentScores[level - 1], 1); 
-  console.log({ratio})
-  insertIcon(ratio, score, element);
-});
-
-
-
-
-// Use MutationObserver to detect new comments exposed wtih show more
-// Additionally, it seems that new Reddit sometimes reloads all comments so this code block will
-// do the majority of the work of labeling comments
-
-
-const observer = new MutationObserver((mutationList, observer) => {
-  console.log({mutationList, observer});
   for (const mutation of mutationList) {
+    // For mysterious Reactivity reasons of some kind, Reddit tends to want to re-draw the DOM after load
+    // (silently, without any mutationobserver trigger since the diff is typically zero)
+    // Watch for the removal of our nodes and re-add them if we have to (ugh).
+    for (const element of mutation.removedNodes) {
+      if (element.classList.contains('relative-tag')) {
+        mutation.target.insertBefore(element, mutation.previousSibling.nextSibling)
+      }
+    }
+
     for (const element of mutation.addedNodes) {
       if (element.nodeType === Node.ELEMENT_NODE && element.nodeName === 'DIV') {
         // Test that this new element node is a comment and not something else
@@ -212,20 +200,18 @@ const observer = new MutationObserver((mutationList, observer) => {
         if (isNaN(score)) {
           continue;
         }
-        console.log({level, element, score})
 
-        // Iterate up the comment div to find the nearest comment with a level one less than we 
+        // Iterate up the comment div to find the nearest comment with a level one less than we
         // currently are. That is the comment to compare against.
         let parentCommentElement;
         let currentElement = element;
         let iterations = 1;
         // Don't look backwards more than 30 divs...if you gotta go back farther than that, you aren't
-        // going to be a highly rated comment with a ratio above 1/10 anyways. Also defends against 
+        // going to be a highly rated comment with a ratio above 1/10 anyways. Also defends against
         // an infinite loop and locking up your browser tab.
-        const maxIterations = 30; 
+        const maxIterations = 30;
 
         while (parentCommentElement === undefined && iterations < maxIterations) {
-          // console.log({parentCommentElement, currentElement, iterations});
           if (isCommentDiv(currentElement.previousSibling) && getLevel(currentElement.previousSibling) === level - 1) {
             parentCommentElement = currentElement.previousSibling;
           }
@@ -236,14 +222,12 @@ const observer = new MutationObserver((mutationList, observer) => {
 
         if (parentCommentElement) {
           const parentSore = getScore(parentCommentElement);
-          console.log({score, parentSore})
           if (isNaN(parentSore)) {
             // Score is not yet shown (may be a •)
             continue;
           }
           //roughly handle really low/negative vote counts
-          const ratio = score / Math.max(parentSore, 1); 
-          console.log({ratio})
+          const ratio = score / Math.max(parentSore, 1);
           insertIcon(ratio, score, element);
         }
       }
@@ -251,22 +235,43 @@ const observer = new MutationObserver((mutationList, observer) => {
   }
 });
 
+
+// Use MutationObserver to detect new comments exposed wtih show more
+// Additionally, it seems that new Reddit sometimes reloads all comments so this code block will
+// do the majority of the work of labeling comments
 const commentSectionClass = '_2M2wOqmeoPVvcSsJ6Po9-V';
-const targetNode = document.querySelector(`.${commentSectionClass}`);
+const observeMyBodyForNewCommentSections = new MutationObserver((mutationList, observer) => {
+  for (const mutation of mutationList) {
+    for (const element of mutation.addedNodes) {
+      if (element.nodeType === Node.ELEMENT_NODE && element.nodeName === 'DIV' && element.classList.contains(commentSectionClass)) {
+        checkInitialLoadComments();
+        observeCommentSectionForNewComments.observe(element, observeCommentSectionForNewCommentsOptions);
+      }
+    }
+  }
+});
+const bodyNode = document.querySelector('body');
+// On initial pageload, reddit delivers a mostly complete body DOM including a comment node.
+// Start observing that right away since you'll never observe a change on the body for initial load
+if (bodyNode.getElementsByClassName(commentSectionClass).length) {
+  checkInitialLoadComments();
+  observeCommentSectionForNewComments.observe(bodyNode.querySelector(`.${commentSectionClass}`), observeCommentSectionForNewCommentsOptions);
+}
+
 const observerOptions = {
   childList: true,
-  subtree: true
+  subtree: true,
+  attributes: false,
 }
-console.log({targetNode})
-observer.observe(targetNode, observerOptions);
+observeMyBodyForNewCommentSections.observe(bodyNode, observerOptions);
 
 
 
 
-
-// OLD REDDIT
+/////////////////
+// OLD REDDIT  //
+/////////////////
 var allParentChains = $('.sitetable.nestedlisting').first().find('> .comment');
-console.log({allParentChains})
 // For each top-level comment
 allParentChains.each(function() {
 
