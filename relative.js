@@ -125,7 +125,8 @@ function isCommentDiv(element) {
 function insertIcon(ratio, score, element, overrideText) {
   // Insert icon!
   const backgroundColor = getRatioColor(ratio, score);
-  const scoreDiv = element.getElementsByClassName('voteButton _2m5vzALl8kQdr9kwIFUo5t')[1];
+  // Downvote button classes are inconsistent between different subreddit styles.
+  const scoreDiv = element.querySelector('[data-click-id="downvote"]');
   const newElement = document.createElement('span');
   newElement.classList.add('relative-tag');
   newElement.innerHTML = overrideText ? overrideText : ratio.toFixed(1);
