@@ -4,7 +4,7 @@
   "name": "Relative Reddit",
   "short_name": "Relative",
   "description": "Spot great Reddit comments by adding color-coded badges that measure relative awesomeness.",
-  "version": "2.0.1",
+  "version": "2.0.2",
 
   "browser_action": {
     "default_icon": "Chevron Up-48.png",
@@ -23,7 +23,7 @@
     "http://www.reddit.com/*"
   ],
   "content_scripts": [ {
-    "js": [ "jquery-2.1.4.min.js", "relative.js" ],
+    "js": [ "relative.js" ],
     "css": ["relative.css"],
     "matches": [ "*://*.reddit.com/*"]
   }]

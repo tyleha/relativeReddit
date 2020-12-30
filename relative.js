@@ -10,18 +10,15 @@ var MAX_RATIO_POSSIBLE = 4;
 var pointRegex = new RegExp(/([-]{0,1}\d?[\d.k]+)/);
 
 var hoverDescriptions = [
-  {value: -Infinity, text: 'Either boring or new'},
-  {value: 0.25, text: 'Not much to look at'},
-  {value: 0.45, text: 'An ordinary comment'},
-  {value: ASSUMED_RATIO, text: 'Above average, maybe even worth reading'},
-  {value: 0.8, text: 'Better than its parent comment'},
+  {value: -Infinity, text: 'An ordinary comment'},
+  {value: ASSUMED_RATIO, text: 'Better than its parent comment'},
+  {value: 0.8, text: 'Above average, worth reading'},
   {value: 1, text: 'Outwitted the previous comment'},
   {value: 1.25, text: 'A solid zinger'},
   {value: 1.5, text: 'A sharp wit or a useful answer'},
   {value: 1.75, text: 'Somebody thought a while about this one'},
   {value: 2, text: 'Brilliant stuff'},
-  {value: 2.5, text: 'Impressive. Most impressive.'},
-  {value: 3.0, text: 'Wow. Quite a wordsmith.'},
+  {value: 3.0, text: 'Quite a wordsmith.'},
   {value: 4.0, text: 'Transcendent. Call your Mom.'},
   {value: Infinity, text: ''},
 ];
@@ -98,7 +95,9 @@ function whiteOrBlackText(backgroundColorInHex) {
 // Application Code //
 //////////////////////
 
-// NEW REDDIT
+////////////////
+// NEW REDDIT //
+////////////////
 const commentLevel = '_1RIl585IYPW6cmNXwgRz0J';
 const commentScore = '_1rZYMD_4xY3gRcSS3p8ODO';
 
@@ -277,33 +276,36 @@ observeMyBodyForNewCommentSections.observe(bodyNode, observerOptions);
 /////////////////
 // OLD REDDIT  //
 /////////////////
-var allParentChains = $('.sitetable.nestedlisting').first().find('> .comment');
-// For each top-level comment
-allParentChains.each(function() {
 
-  // For each subcomment for this top-level comment
-  $(this).find('.score.unvoted').each(function(elem) {
-    var t = $(this);
-    // Find this comment's parent
-    var parent = $(this).parents('.comment').eq(1).find('.score.unvoted').first();
-    var thisScore = parseScore(t.text());
+// If we're on a page with comment table/section
+if (document.querySelector('.sitetable.nestedlisting')) {
+  Array.from(
+    document.querySelector('.sitetable.nestedlisting').childNodes
+  ).filter(n => n.classList.contains('comment')).forEach((comment) => {
 
-    // If we can find a parent score (i.e. aren't the first in a chain)
-    if (parent.text()) {
-      var parentScore = parseScore(parent.text());
-      if (parentScore < 1) {
-        parentScore = 1; //roughly handle really low vote counts
+    // For each subcomment for this top-level comment
+    Array.from(comment.querySelectorAll('.score.unvoted')).forEach(element => {
+      // Find this comment's parent
+      const thisScore = parseScore(element.innerText);
+      const parentScoreElem = element.closest('.comment').parentElement.closest('.comment')?.querySelector('.score.unvoted');
+      if (parentScoreElem) {
+        let parentScore = parseScore(parentScoreElem.innerText);
+        if (parentScore < 1) {
+          parentScore = 1; //roughly handle really low vote counts
+        }
+        // Compute our ratio
+        const ratio = thisScore/parentScore;
+        // Deterime what color, if any, to show
+        const backgroundColor = getRatioColor(ratio, thisScore);
+        // Inject our badge
+        const target = element.parentElement.querySelector('.score.likes');
+        const newElement = document.createElement('span');
+        newElement.classList.add('relative-tag');
+        newElement.innerHTML = ratio.toFixed(1);
+        newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
+        newElement.setAttribute('title', hoverText(ratio));
+        target.parentNode.insertBefore(newElement, target.nextSibling);
       }
-      // Compute our ratio
-      var ratio = thisScore/parentScore;
-      // Deterime what color, if any, to show
-      var backgroundColor = getRatioColor(ratio, thisScore);
-      // Inject our badge.
-      var lastScoreSpan = t.parent().find('.score.likes').first();
-      $('<span>'+ ratio.toFixed(1) +'x</span>').insertAfter(lastScoreSpan).css({
-        'background-color': backgroundColor,
-        'color': whiteOrBlackText(backgroundColor),
-      }).addClass('relative-tag').attr('title', hoverText(ratio));
-    }
+    })
   });
-});
+}
