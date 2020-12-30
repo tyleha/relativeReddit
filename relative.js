@@ -131,6 +131,7 @@ function insertIcon(ratio, score, element, overrideText) {
   newElement.classList.add('relative-tag');
   newElement.innerHTML = overrideText ? overrideText : ratio.toFixed(1);
   newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
+  newElement.setAttribute('title', hoverText(ratio));
   scoreDiv.parentNode.insertBefore(newElement, scoreDiv.nextSibling);
 }
 

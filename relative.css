@@ -5,4 +5,5 @@ span.relative-tag {
   margin: 0 5px;
   padding: 3px 6px;
   font-size: 12px;
+  cursor: default;
 }
