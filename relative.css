@@ -1,9 +1,9 @@
-span.relative-tag {
+.relative-tag {
   border-radius: 3px;
   border: 1px solid #c7c7c7;
   display: inline-block;
   margin: 0 5px;
-  padding: 3px 6px;
+  padding: 0 0.5em;
   font-size: 12px;
   cursor: default;
 }

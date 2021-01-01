@@ -99,10 +99,22 @@ function whiteOrBlackText(backgroundColorInHex) {
 // NEW REDDIT //
 ////////////////
 const commentLevel = '_1RIl585IYPW6cmNXwgRz0J';
-const commentScore = '_1rZYMD_4xY3gRcSS3p8ODO';
+// Reddit layout A, with up/downvotes built into comment level and score next to username. 
+const usernameLineScore = '_2ETuFsVzMBxiHia6HfJCTQ';
+// Reddit layout B, with up/downvotes built into the "reply" line
+// I guess Reddit is a/b testing different UI?
+// Potential test for being layout B might be presence of element with both classes _1rZYMD_4xY3gRcSS3p8ODO _25IkBM0rRUqWX5ZojEMAFQ
+const bottomOfCommentScore = '_1rZYMD_4xY3gRcSS3p8ODO';
+
+
+function isRedditLayoutA(element) {
+  return !!element.getElementsByClassName(usernameLineScore)[0];
+}
+
 
 function getScore(element) {
-  const scoreText = element.getElementsByClassName(commentScore)[0]?.innerText;
+  // Query for either/or
+  const scoreText = element.querySelector(`.${usernameLineScore}, .${bottomOfCommentScore}`)?.innerText
   if (!scoreText) { return; }
   if (scoreText.indexOf('k') > 0) {
     return parseFloat(scoreText.split('k')[0])*1000;
@@ -125,13 +137,18 @@ function insertIcon(ratio, score, element, overrideText) {
   // Insert icon!
   const backgroundColor = getRatioColor(ratio, score);
   // Downvote button classes are inconsistent between different subreddit styles.
-  const scoreDiv = element.querySelector('[data-click-id="downvote"]');
-  const newElement = document.createElement('span');
+  let target;
+  if (isRedditLayoutA(element)) {
+    target = element.querySelector(`.${usernameLineScore}`);
+  } else {
+    target = element.querySelector('[data-click-id="downvote"]');
+  }
+  const newElement = document.createElement('div');
   newElement.classList.add('relative-tag');
   newElement.innerHTML = overrideText ? overrideText : ratio.toFixed(1);
   newElement.setAttribute('style', `background-color:${backgroundColor}; color:${whiteOrBlackText(backgroundColor)};`);
   newElement.setAttribute('title', hoverText(ratio));
-  scoreDiv.parentNode.insertBefore(newElement, scoreDiv.nextSibling);
+  target.parentNode.insertBefore(newElement, target.nextSibling);
 }
 
 function checkInitialLoadComments() {
@@ -160,7 +177,7 @@ function checkInitialLoadComments() {
     }
     //roughly handle really low/negative vote counts
     const ratio = score / Math.max(parentCommentScores[level - 1], 1);
-    const relativeTagElement = insertIcon(ratio, score, element);
+    insertIcon(ratio, score, element);
   });
 }
 
