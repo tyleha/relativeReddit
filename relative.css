@@ -4,6 +4,7 @@
   display: inline-block;
   margin: 0 5px;
   padding: 0 0.5em;
+  line-height: 2em;
   font-size: 12px;
   cursor: default;
 }
